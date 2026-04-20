@@ -15,6 +15,8 @@ export interface CardItem {
   status: CardStatus;
   error?: string;
   data: CardData;
+  /** Warning if numeric area mismatches the textual amount on the receipt */
+  areaWarning?: string;
   createdAt: number;
 }
 
