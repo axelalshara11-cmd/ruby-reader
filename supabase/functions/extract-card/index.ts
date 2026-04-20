@@ -111,15 +111,19 @@ Deno.serve(async (req) => {
       return json({ error: "صيغة استخراج غير صالحة." }, 500);
     }
 
+    const areaNumeric = cleanArea(parsed.areaNumeric);
+    const areaText = (parsed.areaText || "").trim();
+    const areaWarning = validateAreaMatch(areaNumeric, areaText);
+
     const result = {
       receiptNumber: cleanDigits(parsed.receiptNumber),
       date: normalizeDate(parsed.date),
       crop: normalizeCrop(parsed.crop),
       coordinates: (parsed.coordinates || "").trim(),
-      area: cleanArea(parsed.area),
+      area: areaNumeric,
     };
 
-    return json({ success: true, data: result });
+    return json({ success: true, data: result, areaWarning });
   } catch (e) {
     console.error("extract-card error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
