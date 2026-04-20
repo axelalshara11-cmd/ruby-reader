@@ -1,1 +1,4 @@
 project_id = "oakpvitvyltgjjmimpml"
+
+[functions.extract-card]
+verify_jwt = false
