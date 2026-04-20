@@ -74,7 +74,8 @@ const Index = () => {
     try {
       const res = await shareXlsx(items, fname);
       if (res.shared) toast.success("تمت المشاركة");
-      else toast.info("جهازك لا يدعم المشاركة، تم تنزيل الملف بدلاً من ذلك");
+      else if ((res as any).canceled) toast.info("تم إلغاء المشاركة");
+      else toast.info("جهازك لا يدعم مشاركة الملفات، تم تنزيل الملف بدلاً من ذلك");
     } catch (e) {
       toast.error("فشلت المشاركة");
     }
