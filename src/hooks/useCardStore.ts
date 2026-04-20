@@ -25,6 +25,19 @@ export function useCardStore() {
     ]);
   }, []);
 
+  const insertSeparatorAt = useCallback((index: number, text: string) => {
+    setItems((prev) => {
+      const next = [...prev];
+      next.splice(index, 0, {
+        kind: "separator",
+        id: crypto.randomUUID(),
+        text,
+        createdAt: Date.now(),
+      });
+      return next;
+    });
+  }, []);
+
   const updateItem = useCallback((id: string, patch: Partial<ListItem>) => {
     setItems((prev) =>
       prev.map((it) => (it.id === id ? ({ ...it, ...patch } as ListItem) : it)),
@@ -131,6 +144,7 @@ export function useCardStore() {
     setItems,
     addCards,
     addSeparator,
+    insertSeparatorAt,
     updateItem,
     updateCardData,
     removeItem,
