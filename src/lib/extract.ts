@@ -1,14 +1,20 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { CardData } from "@/types/card";
 
+export interface ExtractionResult {
+  data: CardData;
+  /** Warning if numeric area mismatches the textual amount on the receipt */
+  areaWarning?: string;
+}
+
 /**
  * Abstract extraction function. Takes a base64 data URL image
- * and returns a CardData object. Currently powered by Lovable AI (Gemini Vision).
- * Swap this implementation later if you change OCR providers.
+ * and returns a CardData object plus optional warnings.
+ * Currently powered by Lovable AI (Gemini Vision).
  */
 export async function extractCardFromImage(
   imageDataUrl: string,
-): Promise<CardData> {
+): Promise<ExtractionResult> {
   const { data, error } = await supabase.functions.invoke("extract-card", {
     body: { image: imageDataUrl },
   });
@@ -19,7 +25,10 @@ export async function extractCardFromImage(
   if (!data?.success || !data?.data) {
     throw new Error(data?.error || "تعذّر استخراج البيانات");
   }
-  return data.data as CardData;
+  return {
+    data: data.data as CardData,
+    areaWarning: data.areaWarning || undefined,
+  };
 }
 
 /** Convert a File to a base64 data URL. */

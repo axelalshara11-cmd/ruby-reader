@@ -99,11 +99,11 @@ export function useCardStore() {
         }
 
         try {
-          const data = await extractCardFromImage(target.imageDataUrl);
+          const { data, areaWarning } = await extractCardFromImage(target.imageDataUrl);
           setItems((prev) =>
             prev.map((it) =>
               it.id === id && it.kind === "card"
-                ? { ...it, status: "success", data, error: undefined }
+                ? { ...it, status: "success", data, areaWarning, error: undefined }
                 : it,
             ),
           );
