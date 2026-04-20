@@ -35,7 +35,9 @@ Deno.serve(async (req) => {
 
 4. coordinates: إحداثيات الجهاز بصيغة "رقم-رقم-رقمين" مثل "8-9-27" أو "4-1-40". احتفظ بالشرطات.
 
-5. area: المساحة الرقمية فقط (بدون وحدات) من خانة "إجمالي المستحق" أو خانة المساحة. مثال: "70". إذا غير موجود أعد فارغ.
+5. areaNumeric: المساحة الرقمية فقط (بدون وحدات) من خانة "إجمالي المستحق" المكتوبة بشكل حسابي رقمي. مثال: "70".
+
+6. areaText: قيمة المساحة المكتوبة بشكل **نصي / كلمات** في خانة "صافي المستحق" (مثل "سبعون" أو "خمسة وأربعون"). أعد النص كما هو من الكارت بدون تحويل.
 
 كن دقيقاً جداً مع خط اليد العربي. لا تخترع بيانات. إذا لم تتمكن من قراءة حقل بثقة، أعده فارغاً.`;
 
@@ -64,9 +66,10 @@ Deno.serve(async (req) => {
                 date: { type: "string", description: "DD/MM/YYYY" },
                 crop: { type: "string", enum: ["قمح", "بنجر", ""] },
                 coordinates: { type: "string", description: "e.g. 8-9-27" },
-                area: { type: "string", description: "numeric only, e.g. 70" },
+                areaNumeric: { type: "string", description: "Numeric area from إجمالي المستحق, e.g. 70" },
+                areaText: { type: "string", description: "Textual (words) area from صافي المستحق, e.g. سبعون" },
               },
-              required: ["receiptNumber", "date", "crop", "coordinates", "area"],
+              required: ["receiptNumber", "date", "crop", "coordinates", "areaNumeric", "areaText"],
               additionalProperties: false,
             },
           },
