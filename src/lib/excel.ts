@@ -123,18 +123,28 @@ export async function shareXlsx(items: ListItem[], filename = "cards.xlsx") {
   });
 
   const navAny = navigator as any;
-  if (navAny.canShare && navAny.canShare({ files: [file] })) {
+
+  // Try native Web Share API with file
+  if (typeof navAny.share === "function") {
     try {
-      await navAny.share({
+      const shareData: any = {
         files: [file],
-        title: "كارتات الميكنة الزراعية",
+        title: "مستخرج البيانات",
         text: "ملف بيانات الكارتات المستخرجة",
-      });
-      return { shared: true };
-    } catch (e) {
-      // user canceled or share failed; fallback to download
+      };
+      // Some browsers don't expose canShare but still support file sharing
+      if (!navAny.canShare || navAny.canShare(shareData)) {
+        await navAny.share(shareData);
+        return { shared: true };
+      }
+    } catch (e: any) {
+      if (e?.name === "AbortError") {
+        return { shared: false, canceled: true };
+      }
+      console.warn("Web Share failed, falling back to download:", e);
     }
   }
+
   downloadXlsx(items, filename);
   return { shared: false };
 }

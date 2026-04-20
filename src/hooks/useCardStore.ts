@@ -25,6 +25,19 @@ export function useCardStore() {
     ]);
   }, []);
 
+  const insertSeparatorAt = useCallback((index: number, text: string) => {
+    setItems((prev) => {
+      const next = [...prev];
+      next.splice(index, 0, {
+        kind: "separator",
+        id: crypto.randomUUID(),
+        text,
+        createdAt: Date.now(),
+      });
+      return next;
+    });
+  }, []);
+
   const updateItem = useCallback((id: string, patch: Partial<ListItem>) => {
     setItems((prev) =>
       prev.map((it) => (it.id === id ? ({ ...it, ...patch } as ListItem) : it)),
@@ -86,11 +99,11 @@ export function useCardStore() {
         }
 
         try {
-          const data = await extractCardFromImage(target.imageDataUrl);
+          const { data, areaWarning } = await extractCardFromImage(target.imageDataUrl);
           setItems((prev) =>
             prev.map((it) =>
               it.id === id && it.kind === "card"
-                ? { ...it, status: "success", data, error: undefined }
+                ? { ...it, status: "success", data, areaWarning, error: undefined }
                 : it,
             ),
           );
@@ -131,6 +144,7 @@ export function useCardStore() {
     setItems,
     addCards,
     addSeparator,
+    insertSeparatorAt,
     updateItem,
     updateCardData,
     removeItem,

@@ -35,7 +35,9 @@ Deno.serve(async (req) => {
 
 4. coordinates: إحداثيات الجهاز بصيغة "رقم-رقم-رقمين" مثل "8-9-27" أو "4-1-40". احتفظ بالشرطات.
 
-5. area: المساحة الرقمية فقط (بدون وحدات) من خانة "إجمالي المستحق" أو خانة المساحة. مثال: "70". إذا غير موجود أعد فارغ.
+5. areaNumeric: المساحة الرقمية فقط (بدون وحدات) من خانة "إجمالي المستحق" المكتوبة بشكل حسابي رقمي. مثال: "70".
+
+6. areaText: قيمة المساحة المكتوبة بشكل **نصي / كلمات** في خانة "صافي المستحق" (مثل "سبعون" أو "خمسة وأربعون"). أعد النص كما هو من الكارت بدون تحويل.
 
 كن دقيقاً جداً مع خط اليد العربي. لا تخترع بيانات. إذا لم تتمكن من قراءة حقل بثقة، أعده فارغاً.`;
 
@@ -64,9 +66,10 @@ Deno.serve(async (req) => {
                 date: { type: "string", description: "DD/MM/YYYY" },
                 crop: { type: "string", enum: ["قمح", "بنجر", ""] },
                 coordinates: { type: "string", description: "e.g. 8-9-27" },
-                area: { type: "string", description: "numeric only, e.g. 70" },
+                areaNumeric: { type: "string", description: "Numeric area from إجمالي المستحق, e.g. 70" },
+                areaText: { type: "string", description: "Textual (words) area from صافي المستحق, e.g. سبعون" },
               },
-              required: ["receiptNumber", "date", "crop", "coordinates", "area"],
+              required: ["receiptNumber", "date", "crop", "coordinates", "areaNumeric", "areaText"],
               additionalProperties: false,
             },
           },
@@ -111,15 +114,19 @@ Deno.serve(async (req) => {
       return json({ error: "صيغة استخراج غير صالحة." }, 500);
     }
 
+    const areaNumeric = cleanArea(parsed.areaNumeric);
+    const areaText = (parsed.areaText || "").trim();
+    const areaWarning = validateAreaMatch(areaNumeric, areaText);
+
     const result = {
       receiptNumber: cleanDigits(parsed.receiptNumber),
       date: normalizeDate(parsed.date),
       crop: normalizeCrop(parsed.crop),
       coordinates: (parsed.coordinates || "").trim(),
-      area: cleanArea(parsed.area),
+      area: areaNumeric,
     };
 
-    return json({ success: true, data: result });
+    return json({ success: true, data: result, areaWarning });
   } catch (e) {
     console.error("extract-card error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
@@ -171,4 +178,61 @@ function normalizeDate(v: string | undefined) {
   d = d.padStart(2, "0");
   m = m.padStart(2, "0");
   return `${d}/${m}/${y}`;
+}
+
+/**
+ * Validate that a numeric area matches a textual (Arabic words) area.
+ * Returns warning message if they don't match, empty string if OK.
+ */
+function validateAreaMatch(numeric: string, text: string): string {
+  if (!numeric || !text) return "";
+  const n = parseFloat(numeric);
+  if (isNaN(n)) return "";
+  const fromWords = arabicWordsToNumber(text);
+  if (fromWords === null) return "";
+  if (Math.abs(fromWords - n) < 0.01) return "";
+  return `تنبيه: الرقم (${numeric}) لا يطابق صافي المستحق المكتوب نصياً (${text} = ${fromWords}). راجع الكارت.`;
+}
+
+const ARABIC_NUMBERS: Record<string, number> = {
+  "صفر": 0, "واحد": 1, "احد": 1, "أحد": 1, "اثنان": 2, "اثنين": 2, "إثنان": 2,
+  "ثلاثة": 3, "ثلاث": 3, "اربعة": 4, "أربعة": 4, "اربع": 4, "أربع": 4,
+  "خمسة": 5, "خمس": 5, "ستة": 6, "ست": 6, "سبعة": 7, "سبع": 7,
+  "ثمانية": 8, "ثماني": 8, "ثمان": 8, "تسعة": 9, "تسع": 9, "عشرة": 10, "عشر": 10,
+  "احدعشر": 11, "احدعشرة": 11, "اثناعشر": 12, "اثناعشرة": 12,
+  "ثلاثةعشر": 13, "اربعةعشر": 14, "خمسةعشر": 15, "ستةعشر": 16,
+  "سبعةعشر": 17, "ثمانيةعشر": 18, "تسعةعشر": 19,
+  "عشرون": 20, "عشرين": 20, "ثلاثون": 30, "ثلاثين": 30,
+  "اربعون": 40, "أربعون": 40, "اربعين": 40, "أربعين": 40,
+  "خمسون": 50, "خمسين": 50, "ستون": 60, "ستين": 60,
+  "سبعون": 70, "سبعين": 70, "ثمانون": 80, "ثمانين": 80,
+  "تسعون": 90, "تسعين": 90, "مائة": 100, "مئة": 100, "ميه": 100,
+  "مائتان": 200, "مائتين": 200, "مئتان": 200, "مئتين": 200,
+  "الف": 1000, "ألف": 1000,
+};
+
+function arabicWordsToNumber(text: string): number | null {
+  if (!text) return null;
+  // Normalize: remove diacritics, و (and), ال (the)
+  const cleaned = text
+    .replace(/[\u064B-\u0652]/g, "")
+    .replace(/[إأآا]/g, "ا")
+    .replace(/ة/g, "ه")
+    .trim();
+  // Split on و or whitespace
+  const parts = cleaned.split(/\s+|و/).filter(Boolean);
+  if (parts.length === 0) return null;
+  let total = 0;
+  let any = false;
+  for (const p of parts) {
+    const norm = p.replace(/ه$/, "ة"); // try both
+    if (ARABIC_NUMBERS[p] !== undefined) {
+      total += ARABIC_NUMBERS[p];
+      any = true;
+    } else if (ARABIC_NUMBERS[norm] !== undefined) {
+      total += ARABIC_NUMBERS[norm];
+      any = true;
+    }
+  }
+  return any ? total : null;
 }

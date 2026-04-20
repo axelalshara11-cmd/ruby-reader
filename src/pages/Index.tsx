@@ -1,5 +1,8 @@
-import { Fragment, useMemo } from "react";
-import { Sprout, FileSpreadsheet } from "lucide-react";
+import { Fragment, useMemo, useState } from "react";
+import { FileSpreadsheet, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useCardStore } from "@/hooks/useCardStore";
 import { UploadBar } from "@/components/UploadBar";
 import { CardView } from "@/components/CardView";
@@ -13,6 +16,7 @@ const Index = () => {
     items,
     addCards,
     addSeparator,
+    insertSeparatorAt,
     updateItem,
     updateCardData,
     removeItem,
@@ -23,6 +27,23 @@ const Index = () => {
     processing,
     progress,
   } = useCardStore();
+
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
+  const [insertText, setInsertText] = useState("");
+
+  function openInsert(idx: number) {
+    setInsertText("");
+    setInsertIndex(idx);
+  }
+  function confirmInsert() {
+    const t = insertText.trim();
+    if (!t || insertIndex === null) {
+      setInsertIndex(null);
+      return;
+    }
+    insertSeparatorAt(insertIndex, t);
+    setInsertIndex(null);
+  }
 
   // Build a map of card-id → sequential card number (skip separators)
   const cardNumberMap = useMemo(() => {
@@ -53,7 +74,8 @@ const Index = () => {
     try {
       const res = await shareXlsx(items, fname);
       if (res.shared) toast.success("تمت المشاركة");
-      else toast.info("جهازك لا يدعم المشاركة، تم تنزيل الملف بدلاً من ذلك");
+      else if ((res as any).canceled) toast.info("تم إلغاء المشاركة");
+      else toast.info("جهازك لا يدعم مشاركة الملفات، تم تنزيل الملف بدلاً من ذلك");
     } catch (e) {
       toast.error("فشلت المشاركة");
     }
@@ -68,18 +90,10 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/40">
       {/* Header */}
       <header className="gradient-primary text-primary-foreground">
-        <div className="max-w-2xl mx-auto px-4 py-5 flex items-center gap-3">
-          <div className="h-11 w-11 rounded-xl bg-primary-foreground/15 backdrop-blur-sm flex items-center justify-center">
-            <Sprout className="h-6 w-6" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg sm:text-xl font-extrabold leading-tight truncate">
-              كارتات الميكنة الزراعية
-            </h1>
-            <p className="text-xs text-primary-foreground/80">
-              جهاز مستقبل مصر للتنمية المستدامة
-            </p>
-          </div>
+        <div className="max-w-2xl mx-auto px-4 py-5">
+          <h1 className="text-xl sm:text-2xl font-extrabold leading-tight text-center">
+            مستخرج البيانات
+          </h1>
         </div>
       </header>
 
@@ -107,8 +121,8 @@ const Index = () => {
         {items.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="space-y-3">
-            {items.map((it) => (
+          <div className="space-y-2">
+            {items.map((it, idx) => (
               <Fragment key={it.id}>
                 {it.kind === "card" ? (
                   <CardView
@@ -125,14 +139,53 @@ const Index = () => {
                     onDelete={removeItem}
                   />
                 )}
+                {idx < items.length - 1 && (
+                  <InsertSeparatorButton onClick={() => openInsert(idx + 1)} />
+                )}
               </Fragment>
             ))}
           </div>
         )}
       </main>
+
+      <Dialog open={insertIndex !== null} onOpenChange={(o) => !o && setInsertIndex(null)}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة فاصل بين الكارتات</DialogTitle>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={insertText}
+            onChange={(e) => setInsertText(e.target.value)}
+            placeholder="مثال: بدء توريد منطقة أ"
+            onKeyDown={(e) => e.key === "Enter" && confirmInsert()}
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setInsertIndex(null)}>إلغاء</Button>
+            <Button className="gradient-primary text-primary-foreground" onClick={confirmInsert}>
+              إضافة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
+function InsertSeparatorButton({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="group relative flex items-center justify-center h-3 -my-1">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="إضافة فاصل هنا"
+        className="opacity-40 hover:opacity-100 transition-opacity flex items-center justify-center h-7 w-7 rounded-full bg-primary text-primary-foreground shadow-md hover:scale-110"
+      >
+        <Plus className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
 
 function EmptyState() {
   return (

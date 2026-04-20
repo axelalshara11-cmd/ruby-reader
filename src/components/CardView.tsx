@@ -90,13 +90,13 @@ export function CardView({ card, index, onChange, onRetry, onDelete }: Props) {
           src={card.imageDataUrl}
           alt={`كارتة رقم ${index}`}
           loading="lazy"
-          className="w-full max-h-72 object-contain"
+          className="w-full max-h-[28rem] object-contain"
         />
       </button>
 
-      {/* Fields */}
-      <div className="p-4 grid grid-cols-2 gap-3">
-        <Field label="رقم الإيصال" full>
+      {/* Fields - vertical stack */}
+      <div className="p-4 space-y-3">
+        <Field label="رقم الإيصال">
           <Input
             inputMode="numeric"
             className="num text-lg font-bold tracking-wider text-destructive"
@@ -142,11 +142,17 @@ export function CardView({ card, index, onChange, onRetry, onDelete }: Props) {
         <Field label="المساحة">
           <Input
             inputMode="decimal"
-            className="num"
+            className="num text-lg font-bold"
             value={card.data.area}
             onChange={(e) => onChange(card.id, "area", e.target.value)}
             placeholder="70"
           />
+          {card.areaWarning && (
+            <p className="mt-1 text-xs text-warning flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {card.areaWarning}
+            </p>
+          )}
         </Field>
       </div>
 
@@ -172,14 +178,12 @@ export function CardView({ card, index, onChange, onRetry, onDelete }: Props) {
 function Field({
   label,
   children,
-  full,
 }: {
   label: string;
   children: React.ReactNode;
-  full?: boolean;
 }) {
   return (
-    <div className={full ? "col-span-2" : ""}>
+    <div>
       <label className="block text-xs font-medium text-muted-foreground mb-1">
         {label}
       </label>
