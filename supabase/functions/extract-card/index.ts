@@ -194,43 +194,65 @@ function validateAreaMatch(numeric: string, text: string): string {
   return `تنبيه: الرقم (${numeric}) لا يطابق صافي المستحق المكتوب نصياً (${text} = ${fromWords}). راجع الكارت.`;
 }
 
-const ARABIC_NUMBERS: Record<string, number> = {
-  "صفر": 0, "واحد": 1, "احد": 1, "أحد": 1, "اثنان": 2, "اثنين": 2, "إثنان": 2,
-  "ثلاثة": 3, "ثلاث": 3, "اربعة": 4, "أربعة": 4, "اربع": 4, "أربع": 4,
+const ARABIC_NUMBERS_RAW: Record<string, number> = {
+  "صفر": 0, "واحد": 1, "احد": 1, "أحد": 1, "اثنان": 2, "اثنين": 2, "إثنان": 2, "اتنين": 2,
+  "ثلاثة": 3, "ثلاث": 3, "تلاتة": 3, "تلات": 3,
+  "اربعة": 4, "أربعة": 4, "اربع": 4, "أربع": 4,
   "خمسة": 5, "خمس": 5, "ستة": 6, "ست": 6, "سبعة": 7, "سبع": 7,
-  "ثمانية": 8, "ثماني": 8, "ثمان": 8, "تسعة": 9, "تسع": 9, "عشرة": 10, "عشر": 10,
+  "ثمانية": 8, "ثماني": 8, "ثمان": 8, "تمانية": 8, "تمان": 8,
+  "تسعة": 9, "تسع": 9, "عشرة": 10, "عشر": 10,
   "احدعشر": 11, "احدعشرة": 11, "اثناعشر": 12, "اثناعشرة": 12,
   "ثلاثةعشر": 13, "اربعةعشر": 14, "خمسةعشر": 15, "ستةعشر": 16,
   "سبعةعشر": 17, "ثمانيةعشر": 18, "تسعةعشر": 19,
-  "عشرون": 20, "عشرين": 20, "ثلاثون": 30, "ثلاثين": 30,
+  "عشرون": 20, "عشرين": 20, "ثلاثون": 30, "ثلاثين": 30, "تلاتين": 30, "تلاتون": 30,
   "اربعون": 40, "أربعون": 40, "اربعين": 40, "أربعين": 40,
   "خمسون": 50, "خمسين": 50, "ستون": 60, "ستين": 60,
-  "سبعون": 70, "سبعين": 70, "ثمانون": 80, "ثمانين": 80,
-  "تسعون": 90, "تسعين": 90, "مائة": 100, "مئة": 100, "ميه": 100,
-  "مائتان": 200, "مائتين": 200, "مئتان": 200, "مئتين": 200,
+  "سبعون": 70, "سبعين": 70, "ثمانون": 80, "ثمانين": 80, "تمانين": 80, "تمانون": 80,
+  "تسعون": 90, "تسعين": 90, "مائة": 100, "مئة": 100, "ميه": 100, "ميت": 100,
+  "مائتان": 200, "مائتين": 200, "مئتان": 200, "مئتين": 200, "ميتين": 200,
   "الف": 1000, "ألف": 1000,
 };
 
-function arabicWordsToNumber(text: string): number | null {
-  if (!text) return null;
-  // Normalize: remove diacritics, و (and), ال (the)
-  const cleaned = text
+function normalizeArabic(s: string): string {
+  return s
     .replace(/[\u064B-\u0652]/g, "")
     .replace(/[إأآا]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ؤ/g, "و")
+    .replace(/ئ/g, "ي")
     .replace(/ة/g, "ه")
     .trim();
-  // Split on و or whitespace
-  const parts = cleaned.split(/\s+|و/).filter(Boolean);
+}
+
+// Pre-normalize dictionary so lookups match normalized input
+const ARABIC_NUMBERS: Record<string, number> = (() => {
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(ARABIC_NUMBERS_RAW)) {
+    out[normalizeArabic(k)] = v;
+  }
+  return out;
+})();
+
+function arabicWordsToNumber(text: string): number | null {
+  if (!text) return null;
+  const cleaned = normalizeArabic(text);
+  const parts = cleaned
+    .split(/\s+/)
+    .flatMap((tok) => {
+      // Strip leading و (and) when it produces a known word
+      if (tok.length > 1 && tok.startsWith("و")) {
+        const rest = tok.slice(1);
+        if (ARABIC_NUMBERS[rest] !== undefined) return [rest];
+      }
+      return [tok];
+    })
+    .filter(Boolean);
   if (parts.length === 0) return null;
   let total = 0;
   let any = false;
   for (const p of parts) {
-    const norm = p.replace(/ه$/, "ة"); // try both
     if (ARABIC_NUMBERS[p] !== undefined) {
       total += ARABIC_NUMBERS[p];
-      any = true;
-    } else if (ARABIC_NUMBERS[norm] !== undefined) {
-      total += ARABIC_NUMBERS[norm];
       any = true;
     }
   }
