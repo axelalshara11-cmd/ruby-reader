@@ -94,33 +94,33 @@ export function CardView({ card, index, onChange, onRetry, onDelete }: Props) {
         />
       </button>
 
-      {/* Fields - vertical stack */}
-      <div className="p-4 space-y-3">
-        <Field label="رقم الإيصال">
+      {/* Fields - inline label + value rows */}
+      <div className="p-3 space-y-2">
+        <InlineField label="رقم الإيصال">
           <Input
             inputMode="numeric"
-            className="num text-lg font-bold tracking-wider text-destructive"
+            className="num h-9 text-base font-bold tracking-wider text-destructive text-right"
             value={card.data.receiptNumber}
             onChange={(e) => onChange(card.id, "receiptNumber", e.target.value)}
             placeholder="018203"
           />
-        </Field>
+        </InlineField>
 
-        <Field label="التاريخ">
+        <InlineField label="التاريخ">
           <Input
-            className="num"
+            className="num h-9 text-right"
             value={card.data.date}
             onChange={(e) => onChange(card.id, "date", e.target.value)}
             placeholder="DD/MM/YYYY"
           />
-        </Field>
+        </InlineField>
 
-        <Field label="المحصول">
+        <InlineField label="المحصول">
           <Select
             value={card.data.crop || ""}
             onValueChange={(v) => onChange(card.id, "crop", v)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="اختر" />
             </SelectTrigger>
             <SelectContent>
@@ -128,32 +128,33 @@ export function CardView({ card, index, onChange, onRetry, onDelete }: Props) {
               <SelectItem value="بنجر">بنجر</SelectItem>
             </SelectContent>
           </Select>
-        </Field>
+        </InlineField>
 
-        <Field label="الإحداثيات">
+        <InlineField label="الإحداثيات">
           <Input
-            className="num"
+            className="num h-9 text-right"
             value={card.data.coordinates}
             onChange={(e) => onChange(card.id, "coordinates", e.target.value)}
             placeholder="8-9-27"
           />
-        </Field>
+        </InlineField>
 
-        <Field label="المساحة">
+        <InlineField label="المساحة">
           <Input
             inputMode="decimal"
-            className="num text-lg font-bold"
+            className="num h-9 text-base font-bold text-right"
             value={card.data.area}
             onChange={(e) => onChange(card.id, "area", e.target.value)}
             placeholder="70"
           />
-          {card.areaWarning && (
-            <p className="mt-1 text-xs text-warning flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {card.areaWarning}
-            </p>
-          )}
-        </Field>
+        </InlineField>
+
+        {card.areaWarning && (
+          <p className="text-xs text-warning flex items-start gap-1 pt-1">
+            <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+            <span>{card.areaWarning}</span>
+          </p>
+        )}
       </div>
 
       {card.status === "error" && card.error && (
