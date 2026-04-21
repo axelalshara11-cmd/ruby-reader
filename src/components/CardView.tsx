@@ -176,7 +176,7 @@ export function CardView({ card, index, onChange, onRetry, onDelete }: Props) {
   );
 }
 
-function Field({
+function InlineField({
   label,
   children,
 }: {
@@ -184,11 +184,11 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-muted-foreground mb-1">
+    <div className="flex items-center gap-2">
+      <label className="shrink-0 w-24 text-sm font-semibold text-foreground">
         {label}
       </label>
-      {children}
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   );
 }
