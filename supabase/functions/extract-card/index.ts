@@ -155,6 +155,26 @@ function cleanArea(v: string | undefined) {
   return m ? m[0] : "";
 }
 
+/**
+ * Normalize coordinates so the smallest part is first and the largest is last.
+ * Format expected: "a-b-cc" where the last segment is typically the largest (often 2 digits).
+ * If the model returns the order reversed (e.g. "37-9-9"), flip it to "9-9-37".
+ */
+function normalizeCoordinates(v: string | undefined): string {
+  if (!v) return "";
+  const map: Record<string, string> = { "٠":"0","١":"1","٢":"2","٣":"3","٤":"4","٥":"5","٦":"6","٧":"7","٨":"8","٩":"9" };
+  const s = v.replace(/[٠-٩]/g, (d) => map[d]).trim();
+  const parts = s.split(/[-–—]/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length !== 3) return s;
+  const nums = parts.map((p) => parseInt(p, 10));
+  if (nums.some((n) => isNaN(n))) return s;
+  // Reverse if descending (first > last) — coordinates should ascend left→right.
+  if (nums[0] > nums[2]) {
+    return `${nums[2]}-${nums[1]}-${nums[0]}`;
+  }
+  return `${nums[0]}-${nums[1]}-${nums[2]}`;
+}
+
 function normalizeCrop(v: string | undefined) {
   if (!v) return "";
   const s = v.trim();
