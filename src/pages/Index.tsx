@@ -122,6 +122,7 @@ const Index = () => {
           <EmptyState />
         ) : (
           <div className="space-y-2">
+            <InsertSeparatorButton onClick={() => openInsert(0)} />
             {items.map((it, idx) => (
               <Fragment key={it.id}>
                 {it.kind === "card" ? (

@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
 3. crop: نوع المحصول - يجب أن تكون إحدى القيمتين فقط: "بنجر" أو "قمح". الحرف "ح" أو "قمح" = قمح. الحرف "ب" أو "بنجر" = بنجر. إذا غير واضح أعد فارغ.
 
-4. coordinates: إحداثيات الجهاز بصيغة "رقم-رقم-رقمين" مثل "8-9-27" أو "4-1-40". احتفظ بالشرطات.
+4. coordinates: إحداثيات الجهاز بصيغة "رقم-رقم-رقمين" مثل "8-9-27" أو "4-1-40". احتفظ بالشرطات. **مهم جداً:** الترتيب الصحيح يبدأ بأصغر رقم (خانة واحدة عادة) ثم الرقم الأوسط ثم أكبر رقم (رقمين) في النهاية. مثال صحيح: "8-11-35" أو "9-9-37". إذا قرأت "37-9-9" فهذا اتجاه معكوس وعليك إرجاعها بالاتجاه الصحيح "9-9-37". اقرأ الإحداثيات من اليسار إلى اليمين دائماً (أصغر إلى أكبر).
 
 5. areaNumeric: المساحة الرقمية فقط (بدون وحدات) من خانة "إجمالي المستحق" المكتوبة بشكل حسابي رقمي. مثال: "70".
 
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
       receiptNumber: cleanDigits(parsed.receiptNumber),
       date: normalizeDate(parsed.date),
       crop: normalizeCrop(parsed.crop),
-      coordinates: (parsed.coordinates || "").trim(),
+      coordinates: normalizeCoordinates(parsed.coordinates),
       area: areaNumeric,
     };
 
@@ -153,6 +153,26 @@ function cleanArea(v: string | undefined) {
   const s = v.replace(/[٠-٩]/g, (d) => map[d]);
   const m = s.match(/[\d.]+/);
   return m ? m[0] : "";
+}
+
+/**
+ * Normalize coordinates so the smallest part is first and the largest is last.
+ * Format expected: "a-b-cc" where the last segment is typically the largest (often 2 digits).
+ * If the model returns the order reversed (e.g. "37-9-9"), flip it to "9-9-37".
+ */
+function normalizeCoordinates(v: string | undefined): string {
+  if (!v) return "";
+  const map: Record<string, string> = { "٠":"0","١":"1","٢":"2","٣":"3","٤":"4","٥":"5","٦":"6","٧":"7","٨":"8","٩":"9" };
+  const s = v.replace(/[٠-٩]/g, (d) => map[d]).trim();
+  const parts = s.split(/[-–—]/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length !== 3) return s;
+  const nums = parts.map((p) => parseInt(p, 10));
+  if (nums.some((n) => isNaN(n))) return s;
+  // Reverse if descending (first > last) — coordinates should ascend left→right.
+  if (nums[0] > nums[2]) {
+    return `${nums[2]}-${nums[1]}-${nums[0]}`;
+  }
+  return `${nums[0]}-${nums[1]}-${nums[2]}`;
 }
 
 function normalizeCrop(v: string | undefined) {

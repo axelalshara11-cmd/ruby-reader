@@ -3,11 +3,11 @@ import type { ListItem, CardItem } from "@/types/card";
 
 interface Row {
   "الترتيب": string | number;
-  "رقم الإيصال": string;
   "التاريخ": string;
-  "المحصول": string;
   "الإحداثيات": string;
   "المساحة": string;
+  "رقم الإيصال": string;
+  "المحصول": string;
 }
 
 export function buildWorkbook(items: ListItem[]): XLSX.WorkBook {
@@ -19,37 +19,37 @@ export function buildWorkbook(items: ListItem[]): XLSX.WorkBook {
     if (item.kind === "separator") {
       rows.push({
         "الترتيب": "",
-        "رقم الإيصال": `— ${item.text} —`,
-        "التاريخ": "",
-        "المحصول": "",
+        "التاريخ": `— ${item.text} —`,
         "الإحداثيات": "",
         "المساحة": "",
+        "رقم الإيصال": "",
+        "المحصول": "",
       });
       separatorRowIndices.push(rows.length - 1);
     } else {
       counter += 1;
       rows.push({
         "الترتيب": counter,
-        "رقم الإيصال": item.data.receiptNumber || "",
         "التاريخ": item.data.date || "",
-        "المحصول": item.data.crop || "",
         "الإحداثيات": item.data.coordinates || "",
         "المساحة": item.data.area || "",
+        "رقم الإيصال": item.data.receiptNumber || "",
+        "المحصول": item.data.crop || "",
       });
     }
   }
 
   const ws = XLSX.utils.json_to_sheet(rows, {
-    header: ["الترتيب", "رقم الإيصال", "التاريخ", "المحصول", "الإحداثيات", "المساحة"],
+    header: ["الترتيب", "التاريخ", "الإحداثيات", "المساحة", "رقم الإيصال", "المحصول"],
   });
 
   // Column widths
   ws["!cols"] = [
     { wch: 8 },
-    { wch: 22 },
+    { wch: 14 },
     { wch: 14 },
     { wch: 12 },
-    { wch: 14 },
+    { wch: 22 },
     { wch: 12 },
   ];
 
